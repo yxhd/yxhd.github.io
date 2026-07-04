@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>C4D / AIGC Portfolio</title>
+  <style>
+    /* ===== 全局变量 ===== */
+    :root {
+      --bg: #060914;
+      --text: #f5f7fb;
+      --muted: #9aa6bd;
+      --line: rgba(156, 180, 255, 0.18);
+      --accent: #7dd3fc;
+      --accent-2: #a78bfa;
+      --accent-3: #22d3ee;
+      --shadow: 0 34px 110px rgba(0, 0, 0, 0.46), 0 0 70px rgba(34, 211, 238, 0.10);
+      --radius-xl: 34px;
+      --radius-lg: 24px;
+      --header-h: 76px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background: #060914;
+    }
+
+    body {
+      min-height: 100vh;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 15% 8%, rgba(34, 211, 238, 0.14), transparent 28%),
+        radial-gradient(circle at 86% 18%, rgba(167, 139, 250, 0.13), transparent 28%),
+        linear-gradient(180deg, #050816 0%, #080b16 48%, #050816 100%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.5;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(125, 211, 252, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(125, 211, 252, 0.035) 1px, transparent 1px);
+      background-size: 54px 54px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.24));
+    }
+
+    #trailCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .site-header,
+    main,
+    .back-top {
+      position: relative;
+      z-index: 2;
+    }
+
+    /* ===== 导航 ===== */
+    .site-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--header-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 clamp(20px, 5vw, 72px);
+      background: linear-gradient(180deg, rgba(8, 12, 26, 0.86), rgba(8, 12, 26, 0.58));
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(24px) saturate(170%);
+      -webkit-backdrop-filter: blur(24px) saturate(170%);
+      box-shadow: 0 16px 54px rgba(0, 0, 0, 0.22);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 15px;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 35%, #ffffff 0 12%, transparent 13%),
+        conic-gradient(from 160deg, var(--accent), var(--accent-2), #ffffff, var(--accent));
+      box-shadow: 0 0 0 7px rgba(125, 211, 252, 0.08), 0 0 28px rgba(125, 211, 252, 0.46);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: clamp(16px, 2.4vw, 36px);
+      color: rgba(245, 247, 251, 0.72);
+      font-size: 14px;
+      font-weight: 680;
+      list-style: none;
+    }
+
+    .nav-links a {
+      position: relative;
+      color: inherit;
+      text-decoration: none;
+      transition: color 0.25s ease, text-shadow 0.25s ease;
+    }
+
+    .nav-links a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -8px;
+      height: 1px;
+      transform: scaleX(0);
+      transform-origin: center;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 14px rgba(125, 211, 252, 0.8);
+      transition: transform 0.25s ease;
+    }
+
+    .nav-links a:hover {
+      color: #ffffff;
+      text-shadow: 0 0 18px rgba(125, 211, 252, 0.42);
+    }
+    .nav-links a:hover::after {
+      transform: scaleX(1);
+    }
+
+    /* ===== 区块通用 ===== */
+    .section {
+      min-height: 100vh;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: calc(var(--header-h) + 38px) clamp(18px, 5vw, 76px) 54px;
+      overflow: hidden;
+    }
+
+    .hero {
+      isolation: isolate;
+      justify-content: center;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: -3;
+      background:
+        linear-gradient(90deg, rgba(5, 8, 22, 0.96) 0%, rgba(5, 8, 22, 0.78) 42%, rgba(5, 8, 22, 0.38) 100%),
+        url(resource/banner/banner.jpg) center / cover no-repeat;
+    }
+
+    .hero-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 25%, rgba(125, 211, 252, 0.18), transparent 30%),
+        radial-gradient(circle at 76% 40%, rgba(167, 139, 250, 0.20), transparent 28%),
+        linear-gradient(180deg, transparent 0%, #060914 100%);
+    }
+
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      background-image:
+        linear-gradient(rgba(125, 211, 252, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(125, 211, 252, 0.08) 1px, transparent 1px);
+      background-size: 52px 52px;
+      mask-image: linear-gradient(90deg, #000 0%, transparent 75%);
+      opacity: 0.5;
+    }
+
+    .hero-content {
+      width: min(900px, 100%);
+    }
+
+    .eyebrow {
+      margin-bottom: 18px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 850;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      text-shadow: 0 0 22px rgba(125, 211, 252, 0.42);
+    }
+
+    h1,
+    h2 {
+      letter-spacing: -0.06em;
+      line-height: 0.95;
+    }
+
+    h1 {
+      max-width: 940px;
+      font-size: clamp(52px, 9vw, 132px);
+      font-weight: 950;
+      background: linear-gradient(135deg, #ffffff 0%, #cfe9ff 42%, #b9a8ff 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 26px 78px rgba(0, 0, 0, 0.4);
+    }
+
+    h2 {
+      font-size: clamp(42px, 6vw, 92px);
+      font-weight: 950;
+      background: linear-gradient(135deg, #ffffff, #d6e7ff 48%, #a78bfa);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero-desc,
+    .section-head p,
+    .contact-card p {
+      max-width: 660px;
+      color: var(--muted);
+      font-size: clamp(15px, 1.5vw, 18px);
+    }
+
+    .hero-desc {
+      margin-top: 28px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 38px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 140px;
+      height: 48px;
+      padding: 0 24px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      font-size: 14px;
+      font-weight: 820;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease;
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent-3), var(--accent-2));
+      color: #020617;
+      border-color: rgba(255, 255, 255, 0.16);
+      box-shadow: 0 20px 56px rgba(34, 211, 238, 0.22), 0 0 34px rgba(167, 139, 250, 0.18);
+    }
+
+    .btn.ghost {
+      background: rgba(255, 255, 255, 0.06);
+      color: #eef5ff;
+      backdrop-filter: blur(12px);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .scroll-tip {
+      position: absolute;
+      right: clamp(20px, 4vw, 70px);
+      bottom: 34px;
+      color: rgba(222, 235, 255, 0.52);
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: 0.22em;
+      writing-mode: vertical-rl;
+    }
+
+    /* ===== 作品区块 ===== */
+    .portfolio-section {
+      gap: clamp(24px, 4vh, 46px);
+      background:
+        radial-gradient(circle at 15% 20%, rgba(34, 211, 238, 0.09), transparent 24%),
+        radial-gradient(circle at 85% 55%, rgba(167, 139, 250, 0.10), transparent 30%),
+        linear-gradient(180deg, #060914 0%, #0b1020 52%, #060914 100%);
+    }
+
+    .portfolio-section::before {
+      content: attr(data-title);
+      position: absolute;
+      right: -0.08em;
+      top: 12%;
+      z-index: 0;
+      color: rgba(230, 240, 255, 0.035);
+      font-size: clamp(96px, 15vw, 240px);
+      font-weight: 950;
+      letter-spacing: -0.1em;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .portfolio-section::after {
+      content: "";
+      position: absolute;
+      inset: 10% 5%;
+      z-index: 0;
+      pointer-events: none;
+      border: 1px solid rgba(125, 211, 252, 0.08);
+      border-radius: 48px;
+      mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.8), transparent 78%);
+    }
+
+    .section-head {
+      position: relative;
+      z-index: 2;
+      width: min(960px, 100%);
+    }
+
+    .section-head p:last-child {
+      margin-top: 18px;
+    }
+
+    /* ===== 轮播 ———— 尺寸已放大 ===== */
+    .carousel {
+      --active-w: min(68vw, 1000px);   /* 放宽宽度 */
+      --side-w: min(28vw, 400px);      /* 左右项稍宽 */
+      --gap: clamp(18px, 3vw, 42px);
+      position: relative;
+      z-index: 2;
+      width: min(1300px, 100%);
+      margin: 0 auto;
+      padding: 0 clamp(42px, 6vw, 86px);
+    }
+
+    .carousel-viewport {
+      position: relative;
+      height: clamp(380px, 60vh, 800px); /* ✅ 大幅提高，接近 60% 视口高度 */
+      overflow: hidden;
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(125, 211, 252, 0.14);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
+      box-shadow: inset 0 0 80px rgba(125, 211, 252, 0.04);
+    }
+
+    .carousel-track {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    .carousel-item {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: var(--side-w);
+      aspect-ratio: 16 / 9;
+      transform: translate(-50%, -50%) scale(0.82);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: #111827;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 18px 58px rgba(0, 0, 0, 0.34);
+      transition:
+        transform 0.62s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.42s ease,
+        visibility 0.42s ease,
+        width 0.62s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.42s ease,
+        filter 0.42s ease;
+    }
+
+    .carousel-item::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.10), transparent 32%, rgba(0, 0, 0, 0.24));
+    }
+
+    .carousel-item video,
+    .carousel-item img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+    }
+
+    .carousel-item.is-active {
+      width: var(--active-w) !important;
+      transform: translate(-50%, -50%) scale(1) !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto;
+      z-index: 5;
+      filter: none !important;
+      border-color: rgba(125, 211, 252, 0.42) !important;
+      box-shadow: var(--shadow) !important;
+    }
+
+    .carousel-item.is-prev {
+      transform: translate(calc(-50% - (var(--active-w) / 2) - (var(--gap)) - (var(--side-w) / 2)), -50%) scale(0.86);
+      opacity: 0.34;
+      visibility: visible;
+      z-index: 3;
+      filter: saturate(0.70) contrast(0.82) brightness(0.62);
+    }
+
+    .carousel-item.is-next {
+      transform: translate(calc(-50% + (var(--active-w) / 2) + (var(--gap)) + (var(--side-w) / 2)), -50%) scale(0.86);
+      opacity: 0.34;
+      visibility: visible;
+      z-index: 3;
+      filter: saturate(0.70) contrast(0.82) brightness(0.62);
+    }
+
+    .carousel-arrow {
+      position: absolute;
+      top: 50%;
+      z-index: 8;
+      width: 48px;
+      height: 76px;
+      transform: translateY(-50%);
+      border: 1px solid rgba(125, 211, 252, 0.22);
+      border-radius: 999px;
+      background: rgba(8, 12, 26, 0.72);
+      color: #e0f7ff;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28), 0 0 26px rgba(34, 211, 238, 0.08);
+      cursor: pointer;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      font-size: 42px;
+      line-height: 1;
+      transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .carousel-arrow:hover {
+      transform: translateY(-50%) scale(1.04);
+      background: rgba(18, 27, 52, 0.92);
+      border-color: rgba(125, 211, 252, 0.46);
+      box-shadow: 0 18px 58px rgba(0, 0, 0, 0.34), 0 0 34px rgba(34, 211, 238, 0.18);
+    }
+
+    .carousel-arrow.prev {
+      left: 0;
+    }
+
+    .carousel-arrow.next {
+      right: 0;
+    }
+
+    /* ===== 联系 ===== */
+    .contact {
+      align-items: center;
+      text-align: center;
+      background:
+        radial-gradient(circle at 50% 25%, rgba(34, 211, 238, 0.12), transparent 32%),
+        radial-gradient(circle at 70% 65%, rgba(167, 139, 250, 0.10), transparent 28%),
+        linear-gradient(180deg, #060914, #0b1020);
+    }
+
+    .contact-card {
+      width: min(900px, 100%);
+      padding: clamp(34px, 7vw, 86px);
+      border: 1px solid rgba(125, 211, 252, 0.16);
+      border-radius: 42px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.028));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+    }
+
+    .contact-card p {
+      margin: 22px auto 0;
+    }
+
+    .contact-lines {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 34px;
+    }
+
+    .contact-lines span {
+      padding: 12px 16px;
+      border: 1px solid rgba(125, 211, 252, 0.18);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #d8e7ff;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    /* ===== 回到顶部 ===== */
+    .back-top {
+      position: fixed;
+      right: 26px;
+      bottom: 26px;
+      width: 48px;
+      height: 48px;
+      border: 1px solid rgba(125, 211, 252, 0.28);
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.95), rgba(167, 139, 250, 0.95));
+      color: #020617;
+      box-shadow: 0 18px 48px rgba(34, 211, 238, 0.22);
+      cursor: pointer;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(14px);
+      transition: opacity 0.25s ease, visibility 0.25s ease, transform 0.25s ease;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+    }
+
+    .back-top.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    /* ===== 响应式 ===== */
+    @media (max-width: 900px) {
+      :root {
+        --header-h: 68px;
+      }
+      .site-header {
+        padding-inline: 18px;
+      }
+      .nav-links {
+        gap: 12px;
+        font-size: 12px;
+      }
+      .brand span:last-child {
+        display: none;
+      }
+      .carousel {
+        --active-w: min(78vw, 620px);
+        --side-w: min(34vw, 240px);
+        --gap: 16px;
+        padding-inline: 34px;
+      }
+      .carousel-viewport {
+        height: clamp(300px, 50vh, 500px);
+      }
+      .carousel-arrow {
+        width: 38px;
+        height: 60px;
+        font-size: 34px;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .nav-links a:nth-child(2),
+      .nav-links a:nth-child(3),
+      .nav-links a:nth-child(4) {
+        display: none;
+      }
+      .section {
+        padding-inline: 16px;
+      }
+      .hero-actions {
+        width: 100%;
+      }
+      .btn {
+        flex: 1 1 140px;
+      }
+      .carousel {
+        --active-w: 84vw;
+        --side-w: 40vw;
+        --gap: 10px;
+        padding-inline: 26px;
+      }
+      .carousel-viewport {
+        height: 300px;
+        border-radius: 24px;
+      }
+      .contact-card {
+        border-radius: 28px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+      .carousel-item,
+      .btn,
+      .carousel-arrow,
+      .back-top,
+      .nav-links a::after {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="trailCanvas" aria-hidden="true"></canvas>
+
+  <header class="site-header" id="siteHeader">
+    <a class="brand" href="#home" aria-label="返回首页">
+      <span class="brand-mark"></span>
+      <span>C4D / AIGC</span>
+    </a>
+    <nav class="nav-links" aria-label="主导航">
+      <a href="#home">首页</a>
+      <a href="#animation">三维动画</a>
+      <a href="#tvc">TVC广告</a>
+      <a href="#render">工业产品渲染</a>
+      <a href="#contact">联系</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Banner -->
+    <section class="hero section" id="home">
+      <div class="hero-bg" aria-hidden="true"></div>
+      <div class="hero-grid" aria-hidden="true"></div>
+      <div class="hero-content">
+        <p class="eyebrow">CINEMA 4D · AIGC · MOTION DESIGN</p>
+        <h1>以三维视觉构建<br />高级科技感作品集</h1>
+        <p class="hero-desc">聚合三维动画、TVC 宣传片与工业产品渲染，用深色背景、霓虹粒子拖尾、玻璃质感界面和沉浸式混合轮播呈现作品。</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#animation">查看作品</a>
+          <a class="btn ghost" href="#contact">联系合作</a>
+        </div>
+      </div>
+      <div class="scroll-tip">SCROLL</div>
+    </section>
+
+    <!-- 三维动画（视频） -->
+    <section class="portfolio-section section" id="animation" data-title="三维动画">
+      <div class="section-head">
+        <p class="eyebrow">01 / 3D ANIMATION</p>
+        <h2>三维动画</h2>
+        <p>角色、场景、镜头与运动节奏的综合呈现。</p>
+      </div>
+      <div class="carousel" data-carousel data-folder="resource/三维动画" data-count="3" data-label="三维动画" data-type="video">
+        <button class="carousel-arrow prev" type="button" aria-label="上一条作品">‹</button>
+        <div class="carousel-viewport">
+          <div class="carousel-track"></div>
+        </div>
+        <button class="carousel-arrow next" type="button" aria-label="下一条作品">›</button>
+      </div>
+    </section>
+
+    <!-- TVC广告（视频） -->
+    <section class="portfolio-section section" id="tvc" data-title="TVC广告">
+      <div class="section-head">
+        <p class="eyebrow">02 / TVC COMMERCIAL</p>
+        <h2>TVC广告</h2>
+        <p>面向品牌传播的视觉叙事、产品表达与商业质感。</p>
+      </div>
+      <div class="carousel" data-carousel data-folder="resource/TVC广告" data-count="2" data-label="TVC广告" data-type="video">
+        <button class="carousel-arrow prev" type="button" aria-label="上一条作品">‹</button>
+        <div class="carousel-viewport">
+          <div class="carousel-track"></div>
+        </div>
+        <button class="carousel-arrow next" type="button" aria-label="下一条作品">›</button>
+      </div>
+    </section>
+
+    <!-- 工业产品渲染（图片） -->
+    <section class="portfolio-section section" id="render" data-title="工业产品渲染">
+      <div class="section-head">
+        <p class="eyebrow">03 / PRODUCT RENDERING</p>
+        <h2>工业产品渲染</h2>
+        <p>以精密结构、材质细节和光影层次塑造产品价值。</p>
+      </div>
+      <div class="carousel" data-carousel data-folder="resource/工业产品渲染" data-count="16" data-label="工业产品渲染" data-type="image">
+        <button class="carousel-arrow prev" type="button" aria-label="上一条作品">‹</button>
+        <div class="carousel-viewport">
+          <div class="carousel-track"></div>
+        </div>
+        <button class="carousel-arrow next" type="button" aria-label="下一条作品">›</button>
+      </div>
+    </section>
+
+    <!-- 联系 -->
+    <section class="contact section" id="contact">
+      <div class="contact-card">
+        <p class="eyebrow">CONTACT</p>
+        <h2>让视觉成为项目的第一竞争力</h2>
+        <p>欢迎交流 C4D、AIGC 三维视觉、TVC、工业产品渲染与品牌影像项目。</p>
+        <div class="contact-lines">
+          <span>Email：2585594527@qq.com</span>
+          <span>Location：China</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <button class="back-top" id="backTop" type="button" aria-label="回到顶部">↑</button>
+
+  <script>
+    (function() {
+      'use strict';
+
+      var AUTO_DELAY = 4500;
+
+      // 各分类默认数量（仅作为后备，实际以 HTML data-count 为准）
+      var DEFAULT_COUNTS = {
+        'resource/三维动画': 3,
+        'resource/TVC广告': 2,
+        'resource/工业产品渲染': 16
+      };
+
+      function clampIndex(index, length) {
+        if (!Number.isFinite(index) || length <= 0) return 0;
+        return ((index % length) + length) % length;
+      }
+
+      function getInitialIndex(length) {
+        return length >= 2 ? 1 : 0;
+      }
+
+      // 创建媒体项（视频或图片）
+      function createMediaItem(folder, index, label, type) {
+        var item = document.createElement('article');
+        item.className = 'carousel-item';
+        item.dataset.index = String(index);
+
+        if (type === 'video') {
+          var video = document.createElement('video');
+          video.src = folder + '/' + (index + 1) + '.mp4';
+          video.muted = true;
+          video.loop = true;
+          video.playsInline = true;
+          video.preload = 'metadata';
+          video.setAttribute('webkit-playsinline', 'true');
+          video.setAttribute('aria-label', (label || '作品') + ' ' + (index + 1));
+          video.addEventListener('error', function() {
+            this.style.background = '#2a2a3a';
+          });
+          item.appendChild(video);
+        } else {
+          var img = document.createElement('img');
+          img.src = folder + '/' + (index + 1) + '.jpg';
+          img.alt = (label || '作品') + ' ' + (index + 1);
+          img.loading = 'lazy';
+          img.decoding = 'async';
+          img.addEventListener('error', function() {
+            this.style.background = '#2a2a3a';
+            this.alt = '图片加载失败';
+          });
+          item.appendChild(img);
+        }
+        return item;
+      }
+
+      function safePlay(video) {
+        if (!video || typeof video.play !== 'function') return;
+        var result = video.play();
+        if (result && typeof result.catch === 'function') {
+          result.catch(function() {});
+        }
+      }
+
+      function pauseVideo(video) {
+        if (video && typeof video.pause === 'function') {
+          video.pause();
+        }
+      }
+
+      function initCarousel(root) {
+        var track = root.querySelector('.carousel-track');
+        var prevBtn = root.querySelector('.carousel-arrow.prev');
+        var nextBtn = root.querySelector('.carousel-arrow.next');
+        if (!track) return;
+
+        var folder = root.dataset.folder || '';
+        var configuredCount = Number.parseInt(root.dataset.count || '', 10);
+        var count = Number.isFinite(configuredCount) && configuredCount > 0 ?
+          configuredCount :
+          (DEFAULT_COUNTS[folder] || 1);
+        var label = root.dataset.label || '作品';
+        var type = root.dataset.type || 'image';
+
+        var items = [];
+        for (var i = 0; i < count; i++) {
+          items.push(createMediaItem(folder, i, label, type));
+        }
+        track.replaceChildren.apply(track, items);
+
+        var activeIndex = getInitialIndex(items.length);
+        var timer = null;
+        var paused = false;
+
+        function render() {
+          var length = items.length;
+          if (length <= 0) return;
+
+          activeIndex = clampIndex(activeIndex, length);
+          var prevIndex = clampIndex(activeIndex - 1, length);
+          var nextIndex = clampIndex(activeIndex + 1, length);
+
+          items.forEach(function(item, idx) {
+            item.classList.remove('is-active', 'is-prev', 'is-next');
+            item.setAttribute('aria-hidden', 'true');
+
+            var media = item.querySelector('video') || item.querySelector('img');
+
+            if (idx === activeIndex) {
+              item.classList.add('is-active');
+              item.setAttribute('aria-hidden', 'false');
+              if (media && media.tagName === 'VIDEO') {
+                safePlay(media);
+              }
+            } else if (length > 1 && idx === prevIndex) {
+              item.classList.add('is-prev');
+              if (media && media.tagName === 'VIDEO') {
+                pauseVideo(media);
+              }
+            } else if (length > 2 && idx === nextIndex) {
+              item.classList.add('is-next');
+              if (media && media.tagName === 'VIDEO') {
+                pauseVideo(media);
+              }
+            } else {
+              if (media && media.tagName === 'VIDEO') {
+                pauseVideo(media);
+              }
+            }
+          });
+        }
+
+        function go(step) {
+          if (items.length <= 1) {
+            activeIndex = 0;
+          } else {
+            activeIndex = clampIndex(activeIndex + step, items.length);
+          }
+          render();
+        }
+
+        function start() {
+          stop();
+          if (items.length <= 1 || paused) return;
+          timer = window.setInterval(function() {
+            go(1);
+          }, AUTO_DELAY);
+        }
+
+        function stop() {
+          if (timer) {
+            window.clearInterval(timer);
+            timer = null;
+          }
+        }
+
+        if (prevBtn) {
+          prevBtn.addEventListener('click', function() {
+            go(-1);
+            start();
+          });
+        }
+
+        if (nextBtn) {
+          nextBtn.addEventListener('click', function() {
+            go(1);
+            start();
+          });
+        }
+
+        root.addEventListener('mouseenter', function() {
+          paused = true;
+          stop();
+        });
+
+        root.addEventListener('mouseleave', function() {
+          paused = false;
+          start();
+        });
+
+        root.addEventListener('focusin', function() {
+          paused = true;
+          stop();
+        });
+
+        root.addEventListener('focusout', function() {
+          paused = false;
+          start();
+        });
+
+        document.addEventListener('visibilitychange', function() {
+          if (document.hidden) {
+            stop();
+            items.forEach(function(item) {
+              var v = item.querySelector('video');
+              if (v) pauseVideo(v);
+            });
+          } else {
+            render();
+            start();
+          }
+        });
+
+        render();
+        start();
+      }
+
+      // 回到顶部
+      function initBackTop() {
+        var btn = document.getElementById('backTop');
+        if (!btn) return;
+
+        function update() {
+          btn.classList.toggle('show', window.scrollY > 300);
+        }
+
+        btn.addEventListener('click', function() {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        window.addEventListener('scroll', update, { passive: true });
+        update();
+      }
+
+      // 鼠标拖尾
+      function initTrail() {
+        var canvas = document.getElementById('trailCanvas');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d', { alpha: true });
+        if (!ctx) return;
+
+        var pointer = { x: window.innerWidth / 2, y: window.innerHeight / 2, active: false };
+        var points = [];
+        var particles = [];
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var width = 0;
+        var height = 0;
+        var rafId = null;
+        var lastParticleTime = 0;
+
+        function resize() {
+          dpr = Math.min(window.devicePixelRatio || 1, 2);
+          width = window.innerWidth;
+          height = window.innerHeight;
+          canvas.width = Math.max(1, Math.floor(width * dpr));
+          canvas.height = Math.max(1, Math.floor(height * dpr));
+          canvas.style.width = width + 'px';
+          canvas.style.height = height + 'px';
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function addParticle(x, y) {
+          particles.push({
+            x: x,
+            y: y,
+            vx: (Math.random() - 0.5) * 0.8,
+            vy: (Math.random() - 0.5) * 0.8,
+            life: 1,
+            size: 1.2 + Math.random() * 2.4
+          });
+          if (particles.length > 90) particles.shift();
+        }
+
+        function onMove(event) {
+          pointer.x = event.clientX;
+          pointer.y = event.clientY;
+          pointer.active = true;
+          points.push({ x: pointer.x, y: pointer.y, life: 1 });
+          if (points.length > 16) points.shift();
+
+          var now = performance.now();
+          if (now - lastParticleTime > 22) {
+            addParticle(pointer.x, pointer.y);
+            addParticle(pointer.x, pointer.y);
+            lastParticleTime = now;
+          }
+        }
+
+        function draw() {
+          ctx.clearRect(0, 0, width, height);
+
+          for (var i = points.length - 1; i >= 0; i -= 1) {
+            points[i].life -= 0.045;
+            if (points[i].life <= 0) points.splice(i, 1);
+          }
+
+          if (points.length > 1) {
+            ctx.save();
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            for (var j = 1; j < points.length; j += 1) {
+              var prev = points[j - 1];
+              var curr = points[j];
+              var alpha = Math.max(0, curr.life) * 0.36;
+              ctx.beginPath();
+              ctx.moveTo(prev.x, prev.y);
+              ctx.lineTo(curr.x, curr.y);
+              ctx.strokeStyle = 'rgba(125, 211, 252, ' + (Math.max(0, curr.life) * 0.52) + ')';
+              ctx.lineWidth = 1 + j * 0.055;
+              ctx.stroke();
+            }
+            ctx.restore();
+          }
+
+          for (var k = particles.length - 1; k >= 0; k -= 1) {
+            var p = particles[k];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life -= 0.026;
+            if (p.life <= 0) {
+              particles.splice(k, 1);
+              continue;
+            }
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(167, 139, 250, ' + (p.life * 0.38) + ')';
+            ctx.fill();
+          }
+
+          rafId = window.requestAnimationFrame(draw);
+        }
+
+        resize();
+        window.addEventListener('resize', resize, { passive: true });
+        window.addEventListener('pointermove', onMove, { passive: true });
+        window.addEventListener('pointerleave', function() { pointer.active = false; }, { passive: true });
+
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          rafId = window.requestAnimationFrame(draw);
+        }
+
+        window.addEventListener('beforeunload', function() {
+          if (rafId) window.cancelAnimationFrame(rafId);
+        });
+      }
+
+      // 启动
+      function init() {
+        document.querySelectorAll('[data-carousel]').forEach(initCarousel);
+        initBackTop();
+        initTrail();
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init, { once: true });
+      } else {
+        init();
+      }
+    })();
+  </script>
+</body>
+</html>
